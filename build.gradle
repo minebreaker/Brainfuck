@@ -1,4 +1,4 @@
-group 'Brainfuck'
+group 'rip.deadcode'
 version '1.0-SNAPSHOT'
 
 apply plugin: 'java'
@@ -10,5 +10,6 @@ repositories {
 }
 
 dependencies {
+    compile 'com.google.guava:guava:22.0'
     testCompile 'junit:junit:4.12'
 }
