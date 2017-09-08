@@ -59,18 +59,18 @@ public final class Compiler {
         os.write(new byte[] { 0x01, 0x00, 0x15 });  // 10. utf8
         os.write("Ljava/io/PrintStream;".getBytes());
 
-        os.write(new byte[] { 0x0A, 0x00, 0x0B, 0x00, 0xD });  // 11. method PrintStream.print(String)
-        os.write(new byte[] { 0x07, 0x00, 0x0C });  // 12. class
+        os.write(new byte[] { 0x0A, 0x00, 0x0C, 0x00, 0xE });  // 11. method PrintStream.print(String)
+        os.write(new byte[] { 0x07, 0x00, 0x0D });  // 12. class
         os.write(new byte[] { 0x01, 0x00, 0x13 });  // 13. utf8
         os.write("java/io/PrintStream".getBytes());
-        os.write(new byte[] { 0x0C, 0x00, 0x0E, 0x00, 0x0F });  // 14. name and type
+        os.write(new byte[] { 0x0C, 0x00, 0x0F, 0x00, 0x10 });  // 14. name and type
         os.write(new byte[] { 0x01, 0x00, 0x05 });  // 15. utf8
         os.write("print".getBytes());
         os.write(new byte[] { 0x01, 0x00, 0x15 });  // 16. utf8
         os.write("(Ljava/lang/String;)V".getBytes());
 
         // String
-        os.write(new byte[] { 0x08, 0x00, 0x11 });  // 17. string info
+        os.write(new byte[] { 0x08, 0x00, 0x12 });  // 17. string info
         os.write(new byte[] { 0x01, 0x00, 0x0B });  // 18. utf8
         os.write("Hello, JVM!".getBytes());
 
