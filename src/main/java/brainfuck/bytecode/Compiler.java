@@ -35,11 +35,11 @@ public final class Compiler {
 
     public static void compile(InputStream is, OutputStream os) throws IOException {
 
-        os.write(new byte[] { (byte) 0xCA, (byte) 0xFE, (byte) 0xBA, (byte) 0xBE });  // CAFEBABE
+        os.write(new byte[] { (byte) 0xCA, (byte) 0xFE, (byte) 0xBA, (byte) 0xBE }); // CAFEBABE
         os.write(new byte[] { 0x00, 0x00 });  // miner version: 0
         os.write(new byte[] { 0x00, 0x34 });  // major version: 52
 
-        os.write(new byte[] { 0x00, 0x17 });  // constant pool count: 22 + 1
+        os.write(new byte[] { 0x00, 0x18 });  // constant pool count: 23 + 1
         // constant pool
         os.write(new byte[] { 0x07, 0x00, 0x02 });  // 1. class: Main
         os.write(new byte[] { 0x01, 0x00, 0x04 });  // 2. utf8
@@ -84,32 +84,48 @@ public final class Compiler {
         os.write(new byte[] { 0x01, 0x00, 0x13 });  // 22. utf8
         os.write("[Ljava/lang/String;".getBytes());
 
+        // "Code" for Attribute
+        os.write(new byte[] { 0x01, 0x00, 0x04 });  // 23. utf8
+        os.write("Code".getBytes());
 
-        // access_flags: ACC_SUPER ACC_PUBLIC
-        os.write(new byte[] { 0x0, 0x21 });
+        os.write(new byte[] { 0x00, 0x21 });  // access_flags: ACC_SUPER ACC_PUBLIC
+        os.write(new byte[] { 0x00, 0x01 });  // this class
+        os.write(new byte[] { 0x00, 0x03 });  // super class
 
-        // this class
-        os.write(new byte[] { 0x00, 0x01 });
-
-        // super class
-        os.write(new byte[] { 0x00, 0x03 });
-
-        // interfaces count
-        os.write(new byte[] { 0x00, 0x00 });
-
+        os.write(new byte[] { 0x00, 0x00 });  // interfaces count
         // interfaces[]
         //NOP
-
-        // fields count
-        os.write(new byte[] { 0x00, 0x00 });
-
+        os.write(new byte[] { 0x00, 0x00 });  // fields count
         // fields[]
         // NOP
 
-        // method count
-        os.write(new byte[] { 0x00, 0x00 });
-
+        os.write(new byte[] { 0x00, 0x01 });  // method count
         // methods[]
+
+        // main
+        os.write(new byte[] { 0x00, 0x09 });  // access flags: ACC_PUBLIC ACC_STATIC
+        os.write(new byte[] { 0x00, 0x13 });  // name index: main
+        os.write(new byte[] { 0x00, 0x14 });  // descriptor index
+        os.write(new byte[] { 0x00, 0x01 });  // attributes count
+        // attribute info
+        os.write(new byte[] { 0x00, 0x17 });  // attribute name index: Code
+        os.write(new byte[] { 0x00, 0x00, 0x00, 0x15 });  // attribute length
+        // info
+        os.write(new byte[] { 0x00, 0x02 });  // max stack
+        os.write(new byte[] { 0x00, 0x01 });  // max locals
+        // code length
+        os.write(new byte[] { 0x00, 0x00, 0x00, 0x09 });
+        // code
+        os.write(new byte[] { (byte) 0xB2, 0x00, 0x05 });  // getstatic Field java/lang/System.out:Ljava/io/PrintStream;
+        os.write(new byte[] { 0x12, 0x11 });  // ldc String hello, JVM!
+        os.write(new byte[] { (byte) 0xB6, 0x00, 0x0B });  // invokevirtual Method java/io/PrintStream.println:(Ljava/lang/String;)V
+        os.write(new byte[] { (byte) 0xB1 });  // return
+
+        os.write(new byte[] { 0x00, 0x00 });  // exception table length
+        // exception table
+        // NOP
+        os.write(new byte[] { 0x00, 0x00 });  // attribute count
+        // attribute info[]
         // NOP
 
         // class attributes count
