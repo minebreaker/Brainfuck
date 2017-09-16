@@ -1,9 +1,7 @@
 package brainfuck.bytecode;
 
-import java.io.BufferedOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -28,110 +26,208 @@ public final class Compiler {
 //        checkState(Files.notExists(outputPath), "Output file already exists.");
 
         try (OutputStream os = new BufferedOutputStream(Files.newOutputStream(outputPath))) {
-            compile(null, os);
+            InputStream is = new ByteArrayInputStream(",++-.>,.<.".getBytes(StandardCharsets.UTF_8));
+            compile(is, os);
         }
     }
 
 
     public static void compile(InputStream is, OutputStream os) throws IOException {
 
-        os.write(new byte[] { (byte) 0xCA, (byte) 0xFE, (byte) 0xBA, (byte) 0xBE }); // CAFEBABE
-        os.write(new byte[] { 0x00, 0x00 });  // miner version: 0
-        os.write(new byte[] { 0x00, 0x34 });  // major version: 52
+        FluentByteWriter w = new FluentByteWriter(os);
 
-        os.write(new byte[] { 0x00, 0x18 });  // constant pool count: 23 + 1
-        // constant pool
-        os.write(new byte[] { 0x07, 0x00, 0x02 });  // 1. class: Main
-        os.write(new byte[] { 0x01, 0x00, 0x04 });  // 2. utf8
-        os.write("Main".getBytes());
-        os.write(new byte[] { 0x07, 0x00, 0x04 });  // 3. class: java/lang/Object
-        os.write(new byte[] { 0x01, 0x00, 0x10 });  // 4. utf8
-        os.write("java/lang/Object".getBytes());
+        w.write(
+                0xCA, 0xFE, 0xBA, 0xBE, // CAFEBABE
+                0x00, 0x00,  // miner version: 0
+                0x00, 0x34,  // major version: 52
 
-        // System.out.print
-        os.write(new byte[] { 0x09, 0x00, 0x06, 0x00, 0x08 });  // 5. fieldref System.out
-        os.write(new byte[] { 0x07, 0x00, 0x07 });  // 6. class
-        os.write(new byte[] { 0x01, 0x00, 0x10 });  // 7. utf8
-        os.write("java/lang/System".getBytes());
-        os.write(new byte[] { 0x0C, 0x00, 0x09, 0x00, 0x0A });  // 8. name and type
-        os.write(new byte[] { 0x01, 0x00, 0x03 });  // 9. utf8
-        os.write("out".getBytes());
-        os.write(new byte[] { 0x01, 0x00, 0x15 });  // 10. utf8
-        os.write("Ljava/io/PrintStream;".getBytes());
+                0x00, 0x20,  // constant pool count: 31 + 1
+                // constant pool
+                0x07, 0x00, 0x02,  // 1. class: Main
+                0x01, 0x00, 0x04,  // 2. utf8
+                "Main",
+                0x07, 0x00, 0x04,  // 3. class: java/lang/Object
+                0x01, 0x00, 0x10,  // 4. utf8
+                "java/lang/Object",
 
-        os.write(new byte[] { 0x0A, 0x00, 0x0C, 0x00, 0xE });  // 11. method PrintStream.print(String)
-        os.write(new byte[] { 0x07, 0x00, 0x0D });  // 12. class
-        os.write(new byte[] { 0x01, 0x00, 0x13 });  // 13. utf8
-        os.write("java/io/PrintStream".getBytes());
-        os.write(new byte[] { 0x0C, 0x00, 0x0F, 0x00, 0x10 });  // 14. name and type
-        os.write(new byte[] { 0x01, 0x00, 0x05 });  // 15. utf8
-        os.write("print".getBytes());
-        os.write(new byte[] { 0x01, 0x00, 0x15 });  // 16. utf8
-        os.write("(Ljava/lang/String;)V".getBytes());
+                // System.out.print
+                0x09, 0x00, 0x06, 0x00, 0x08,  // 5. fieldref System.out
+                0x07, 0x00, 0x07,  // 6. class
+                0x01, 0x00, 0x10,  // 7. utf8
+                "java/lang/System",
+                0x0C, 0x00, 0x09, 0x00, 0x0A,  // 8. name and type
+                0x01, 0x00, 0x03,  // 9. utf8
+                "out",
+                0x01, 0x00, 0x15,  // 10. utf8
+                "Ljava/io/PrintStream;",
+                0x0A, 0x00, 0x0C, 0x00, 0x0E,  // 11. method PrintStream.print(int)
+                0x07, 0x00, 0x0D,  // 12. class
+                0x01, 0x00, 0x13,  // 13. utf8
+                "java/io/PrintStream",
+                0x0C, 0x00, 0x0F, 0x00, 0x10,  // 14. name and type
+                0x01, 0x00, 0x05,  // 15. utf8
+                "print",
+                0x01, 0x00, 0x04,  // 16. utf8
+                "(C)V",
 
-        // String
-        os.write(new byte[] { 0x08, 0x00, 0x12 });  // 17. string info
-        os.write(new byte[] { 0x01, 0x00, 0x0B });  // 18. utf8
-        os.write("Hello, JVM!".getBytes());
+                // System.in.read(int)
+                0x09, 0x00, 0x06, 0x00, 0x12,  // 17. fieldref System.in
+                0x0C, 0x00, 0x13, 0x00, 0x14,  // 18. name and type
+                0x01, 0x00, 0x02,  // 19. utf8
+                "in",
+                0x01, 0x00, 0x15,  // 20. utf8
+                "Ljava/io/InputStream;",
+                0x0A, 0x00, 0x16, 0x00, 0x18,  // 21. method InputStream.read(int)
+                0x07, 0x00, 0x17,  // 22. class
+                0x01, 0x00, 0x13,  // 23. utf8
+                "java/io/InputStream",
+                0x0C, 0x00, 0x19, 0x00, 0x1A,  // 24. name and type
+                0x01, 0x00, 0x04,  // 25. utf8
+                "read",
+                0x01, 0x00, 0x3,  // 26. utf8
+                "()I",
 
-        // main
-        os.write(new byte[] { 0x01, 0x00, 0x04 });  // 19. utf8
-        os.write("main".getBytes());
-        os.write(new byte[] { 0x01, 0x00, 0x16 });  // 20. utf8
-        os.write("([Ljava/lang/String;)V".getBytes());
-        os.write(new byte[] { 0x01, 0x00, 0x04 });  // 21. utf8
-        os.write("args".getBytes());
-        os.write(new byte[] { 0x01, 0x00, 0x13 });  // 22. utf8
-        os.write("[Ljava/lang/String;".getBytes());
+                // main
+                0x01, 0x00, 0x04,  // 27. utf8
+                "main",
+                0x01, 0x00, 0x16,  // 28. utf8
+                "([Ljava/lang/String;)V",
+                0x01, 0x00, 0x04,  // 29. utf8
+                "args",
+                0x01, 0x00, 0x13,  // 30. utf8
+                "[Ljava/lang/String;",
 
-        // "Code" for Attribute
-        os.write(new byte[] { 0x01, 0x00, 0x04 });  // 23. utf8
-        os.write("Code".getBytes());
+                // "Code" for Attribute
+                0x01, 0x00, 0x04,  // 31. utf8
+                "Code",
 
-        os.write(new byte[] { 0x00, 0x21 });  // access_flags: ACC_SUPER ACC_PUBLIC
-        os.write(new byte[] { 0x00, 0x01 });  // this class
-        os.write(new byte[] { 0x00, 0x03 });  // super class
+                0x00, 0x21,  // access_flags: ACC_SUPER ACC_PUBLIC
+                0x00, 0x01,  // this class
+                0x00, 0x03,  // super class
 
-        os.write(new byte[] { 0x00, 0x00 });  // interfaces count
-        // interfaces[]
-        //NOP
-        os.write(new byte[] { 0x00, 0x00 });  // fields count
-        // fields[]
-        // NOP
+                0x00, 0x00,  // interfaces count
+                // interfaces[]
+                //NOP
+                0x00, 0x00,  // fields count
+                // fields[]
+                // NOP
 
-        os.write(new byte[] { 0x00, 0x01 });  // method count
-        // methods[]
+                0x00, 0x01,  // method count
+                // methods[]
 
-        // main
-        os.write(new byte[] { 0x00, 0x09 });  // access flags: ACC_PUBLIC ACC_STATIC
-        os.write(new byte[] { 0x00, 0x13 });  // name index: main
-        os.write(new byte[] { 0x00, 0x14 });  // descriptor index
-        os.write(new byte[] { 0x00, 0x01 });  // attributes count
-        // attribute info
-        os.write(new byte[] { 0x00, 0x17 });  // attribute name index: Code
-        os.write(new byte[] { 0x00, 0x00, 0x00, 0x15 });  // attribute length
-        // info
-        os.write(new byte[] { 0x00, 0x02 });  // max stack
-        os.write(new byte[] { 0x00, 0x01 });  // max locals
-        // code length
-        os.write(new byte[] { 0x00, 0x00, 0x00, 0x09 });
-        // code
-        os.write(new byte[] { (byte) 0xB2, 0x00, 0x05 });  // getstatic Field java/lang/System.out:Ljava/io/PrintStream;
-        os.write(new byte[] { 0x12, 0x11 });  // ldc String hello, JVM!
-        os.write(new byte[] { (byte) 0xB6, 0x00, 0x0B });  // invokevirtual Method java/io/PrintStream.println:(Ljava/lang/String;)V
-        os.write(new byte[] { (byte) 0xB1 });  // return
+                // main
+                0x00, 0x09,  // access flags: ACC_PUBLIC ACC_STATIC
+                0x00, 0x1B,  // name index: main
+                0x00, 0x1C,  // descriptor index
+                0x00, 0x01,  // attributes count
+                // attribute info
+                0x00, 0x1F  // attribute name index: Code
+        );
+        byte[] code = compile(is);
+        w.write(
+                ByteUtils.toByteArray(code.length + 12),  // attribute length
+                // info
+                0x00, 0x04,  // max stack
+                0x00, 0x02,  // max locals
 
-        os.write(new byte[] { 0x00, 0x00 });  // exception table length
-        // exception table
-        // NOP
-        os.write(new byte[] { 0x00, 0x00 });  // attribute count
-        // attribute info[]
-        // NOP
+                // code length
+                ByteUtils.toByteArray(code.length),
+                // code
+                code,
 
-        // class attributes count
-        os.write(new byte[] { 0x00, 0x00 });
-        // attributes
-        // NOP
+                0x00, 0x00,  // exception table length
+                // exception table
+                // NOP
+                0x00, 0x00,  // attribute count
+                // attribute info[]
+                // NOP
+
+                // class attributes count
+                0x00, 0x00
+                // attributes
+                // NOP
+        );
+    }
+
+    private static byte[] compile(InputStream is) throws IOException {
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        FluentByteWriter w = new FluentByteWriter(baos);
+
+        // initialize
+        w.write(
+                // creates data buffer
+                0x11, 0x75, 0x30,  // sipush 30000
+                0xBC, 0x0A,  // newarray int
+                0x4B,  // astore_0  // ignore application arguments (String[] args)
+                // creates instruction pointer
+                0x03,  // iconst_0
+                0x3c  // istore_1
+        );
+
+        int i;
+        while ((i = is.read()) >= 0) {
+            switch (i) {
+            case ('+'):
+                w.write(
+                        0x2A,  // aload_0
+                        0x1B,  // iload_1
+                        0x5C,  // dup2
+                        0x2E,  // iaload
+                        0x04,  // iconst_1
+                        0x60,  // iadd
+                        0x4F  // iastore
+                );
+                break;
+            case ('-'):
+                w.write(
+                        0x2A,  // aload_0
+                        0x1B,  // iload_1
+                        0x5C,  // dup2
+                        0x2E,  // iaload
+                        0x02,  // iconst_m1
+                        0x60,  // iadd
+                        0x4F  // iastore
+                );
+                break;
+            case ('>'):
+                w.write(0x84, 0x01, 0x01);  // iinc 1 1
+                break;
+            case ('<'):
+                w.write(0x84, 0x01, 0xFF);  // iinc 1 -1
+                break;
+            case ('.'):
+                w.write(
+                        0xB2, 0x00, 0x05,  // getstatic System.out
+                        0x2A,  // aload_0
+                        0x1B,  // iload_1
+                        0x2E,  // iaload
+                        0x92,  // i2c
+                        0xB6, 0x00, 0x0B  // invokevirtual print(Ljava/lang/String;)V
+                );
+                break;
+            case (','):
+                w.write(
+                        0x2A,  // aload_0
+                        0x1B,  // iload_1
+                        0xB2, 0x00, 0x11,  // getstatic System.in
+                        0xB6, 0x00, 0x15,  // invokevirtual read()I
+                        0x4F  // iastore
+                );
+                break;
+            case ('['):
+                break;
+            case (']'):
+                break;
+            default:
+                // NOP
+            }
+
+        }
+
+        w.write(0xb1);  // return
+
+        return baos.toByteArray();
     }
 
 }
