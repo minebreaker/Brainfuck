@@ -8,12 +8,12 @@ public final class ByteUtils {
         throw new UnsupportedOperationException();
     }
 
-    public static byte[] toByteArray(int n) {
+    public static byte[] toByteArray4(int n) {
         return ByteBuffer.allocate(4).putInt(n).array();
     }
 
-    public static byte[] toByteArray(int n, int size) {
-        return ByteBuffer.allocate(size).putInt(n).array();
+    public static byte[] toByteArray2(short n) {
+        return ByteBuffer.allocate(2).putShort(n).array();
     }
 
 }

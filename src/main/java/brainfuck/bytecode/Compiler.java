@@ -1,10 +1,12 @@
 package brainfuck.bytecode;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
 
 //import java.nio.file.Files;
 //import java.nio.file.Path;
@@ -14,23 +16,22 @@ public final class Compiler {
 
     public static void main(String[] args) throws IOException {
 
-//        checkArgument(args.length == 1, "Argument size must be 2");
-//        String inputFile = args[0];
+        checkArgument(args.length == 2, "Argument size must be 2");
+        String inputFile = args[0];
+        Path inputPath = Paths.get(inputFile);
+        checkState(Files.exists(inputPath), "File not found.");
 
-        // TODO
-//        Path inputPath = Paths.get(inputFile);
-//        checkState(Files.exists(inputPath), "File not found.");
+        String outputFile = args[1];
+        Path outputDir = Paths.get(outputFile);
+        checkState(Files.exists(outputDir), "Output directory does not exist");
+        Path outputPath = outputDir.resolve("Main.class");
+        checkState(Files.notExists(outputPath), "Output file '%s' already exists.", outputDir.toString());
 
-
-        Path outputPath = Paths.get("Main.class");
-//        checkState(Files.notExists(outputPath), "Output file already exists.");
-
-        try (OutputStream os = new BufferedOutputStream(Files.newOutputStream(outputPath))) {
-            InputStream is = new ByteArrayInputStream(",++-.>,.<.".getBytes(StandardCharsets.UTF_8));
+        try (OutputStream os = new BufferedOutputStream(Files.newOutputStream(outputPath));
+             InputStream is = new BufferedInputStream(Files.newInputStream(inputPath))) {
             compile(is, os);
         }
     }
-
 
     public static void compile(InputStream is, OutputStream os) throws IOException {
 
@@ -39,7 +40,7 @@ public final class Compiler {
         w.write(
                 0xCA, 0xFE, 0xBA, 0xBE, // CAFEBABE
                 0x00, 0x00,  // miner version: 0
-                0x00, 0x34,  // major version: 52
+                0x00, 0x31,  // major version: 49  // Version 49 doesn't require stack map
 
                 0x00, 0x20,  // constant pool count: 31 + 1
                 // constant pool
@@ -123,15 +124,15 @@ public final class Compiler {
                 // attribute info
                 0x00, 0x1F  // attribute name index: Code
         );
-        byte[] code = compile(is);
+        byte[] code = compileCode(is);
         w.write(
-                ByteUtils.toByteArray(code.length + 12),  // attribute length
+                ByteUtils.toByteArray4(code.length + 12),  // attribute length
                 // info
                 0x00, 0x04,  // max stack
                 0x00, 0x02,  // max locals
 
                 // code length
-                ByteUtils.toByteArray(code.length),
+                ByteUtils.toByteArray4(code.length),
                 // code
                 code,
 
@@ -149,7 +150,7 @@ public final class Compiler {
         );
     }
 
-    private static byte[] compile(InputStream is) throws IOException {
+    private static byte[] compileCode(InputStream is) throws IOException {
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         FluentByteWriter w = new FluentByteWriter(baos);
@@ -162,8 +163,21 @@ public final class Compiler {
                 0x4B,  // astore_0  // ignore application arguments (String[] args)
                 // creates instruction pointer
                 0x03,  // iconst_0
-                0x3c  // istore_1
+                0x3C   // istore_1
         );
+        w.write(
+                compileCodeElements(is),
+                // return
+                0xB1
+        );
+
+        return baos.toByteArray();
+    }
+
+    private static byte[] compileCodeElements(InputStream is) throws IOException {
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        FluentByteWriter w = new FluentByteWriter(baos);
 
         int i;
         while ((i = is.read()) >= 0) {
@@ -216,16 +230,35 @@ public final class Compiler {
                 );
                 break;
             case ('['):
+                int size = baos.size();
+                w.write((Object) compileLoop(is));
                 break;
             case (']'):
-                break;
+                return baos.toByteArray();
             default:
                 // NOP
             }
-
         }
 
-        w.write(0xb1);  // return
+        return baos.toByteArray();
+    }
+
+    private static byte[] compileLoop(InputStream is) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        FluentByteWriter w = new FluentByteWriter(baos);
+
+        w.write(
+                // load current pointer value
+                0x2A,  // aload_0
+                0x1B,  // iload_1
+                0x2E  // iaload
+        );
+        byte[] insideLoop = compileCodeElements(is);
+        w.write(
+                0x99, ByteUtils.toByteArray2((short) (insideLoop.length + 6)), // ifeq  // 4 = ifeq(3) + loop length + goto(3)
+                insideLoop,
+                0xA7, ByteUtils.toByteArray2((short) -(insideLoop.length + 6))  // goto
+        );
 
         return baos.toByteArray();
     }
