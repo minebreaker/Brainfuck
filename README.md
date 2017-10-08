@@ -74,10 +74,19 @@ getstatic java/lang/System.in:Ljava.io.InputStream
 invokevirtual java/io/InputStream.read:(I)V
 
 // [
-// no ops, but push current position into queue  `LoopQueue.push(pos)`
+// save current position
+// read current number in array
+aload_0
+iload_1
+iaload
+// if [i] == 0
+ifeq `end of loop`
+...  // recursively compile
+goto `saved position`
+// end of loop
 
 // ]
-goto `LoopQueue.poll()`
+// NOP
 ```
 
 ### tear down
