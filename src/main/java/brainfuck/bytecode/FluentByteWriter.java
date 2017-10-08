@@ -5,6 +5,9 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * Helper class to create byte array fluently.
+ */
 public final class FluentByteWriter {
 
     private final OutputStream os;
@@ -18,7 +21,7 @@ public final class FluentByteWriter {
         try {
             for (Object o : bytes) {
                 if (o instanceof Integer) {
-                    os.write((Integer) o);
+                    os.write((Integer) o);  // Note high-order bits are ignored
                 } else if (o instanceof Byte) {
                     os.write((Byte) o);
                 } else if (o instanceof byte[]) {
@@ -26,7 +29,7 @@ public final class FluentByteWriter {
                 } else if (o instanceof String) {
                     os.write(((String) o).getBytes(StandardCharsets.UTF_8));
                 } else {
-                    throw new UnsupportedOperationException(o.getClass().getCanonicalName());
+                    throw new UnsupportedOperationException("Unwritable class: " + o.getClass().getCanonicalName());
                 }
             }
         } catch (IOException e) {

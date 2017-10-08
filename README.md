@@ -9,11 +9,13 @@
 Interpreter i = new Interpreter(System.out, System.in);
 ```
 
-InputStreamを改行まで読み込んで、実行します
+Reads InputStream til hit linebreaks and execute the code.
+
+See `brainfuck.bytecode.CompilerTest.java`.
 
 ## Compiler
 
-BrainfuckをJavaバイトコードにコンパイルします
+Compiles given Brainfuck code into Java byte code.
 
 ### init
 

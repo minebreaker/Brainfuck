@@ -33,6 +33,13 @@ public final class Compiler {
         }
     }
 
+    /**
+     * Read BF source code and compile it into the Java byte code.
+     *
+     * @param is {@link InputStream} to read BF source
+     * @param os {@link OutputStream} to write byte code
+     * @throws IOException When IO operation failed.
+     */
     public static void compile(InputStream is, OutputStream os) throws IOException {
 
         FluentByteWriter w = new FluentByteWriter(os);
@@ -124,7 +131,7 @@ public final class Compiler {
                 // attribute info
                 0x00, 0x1F  // attribute name index: Code
         );
-        byte[] code = compileCode(is);
+        byte[] code = compileCodes(is);
         w.write(
                 ByteUtils.toByteArray4(code.length + 12),  // attribute length
                 // info
@@ -150,7 +157,14 @@ public final class Compiler {
         );
     }
 
-    private static byte[] compileCode(InputStream is) throws IOException {
+    /**
+     * Creates JVM opcodes.
+     *
+     * @param is {@link InputStream} to read.
+     * @return Byte array of the opcodes
+     * @throws IOException When IO operation failed.
+     */
+    private static byte[] compileCodes(InputStream is) throws IOException {
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         FluentByteWriter w = new FluentByteWriter(baos);
@@ -159,21 +173,23 @@ public final class Compiler {
         w.write(
                 // creates data buffer
                 0x11, 0x75, 0x30,  // sipush 30000
-                0xBC, 0x0A,  // newarray int
-                0x4B,  // astore_0  // ignore application arguments (String[] args)
+                0xBC, 0x0A,        // newarray int
+                0x4B,              // astore_0  // ignore application arguments (String[] args)
                 // creates instruction pointer
-                0x03,  // iconst_0
-                0x3C   // istore_1
+                0x03,              // iconst_0
+                0x3C               // istore_1
         );
         w.write(
                 compileCodeElements(is),
-                // return
-                0xB1
+                0xB1  // return
         );
 
         return baos.toByteArray();
     }
 
+    /**
+     * Actual compiling.
+     */
     private static byte[] compileCodeElements(InputStream is) throws IOException {
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -190,7 +206,7 @@ public final class Compiler {
                         0x2E,  // iaload
                         0x04,  // iconst_1
                         0x60,  // iadd
-                        0x4F  // iastore
+                        0x4F   // iastore
                 );
                 break;
             case ('-'):
@@ -201,7 +217,7 @@ public final class Compiler {
                         0x2E,  // iaload
                         0x02,  // iconst_m1
                         0x60,  // iadd
-                        0x4F  // iastore
+                        0x4F   // iastore
                 );
                 break;
             case ('>'):
@@ -213,29 +229,30 @@ public final class Compiler {
             case ('.'):
                 w.write(
                         0xB2, 0x00, 0x05,  // getstatic System.out
-                        0x2A,  // aload_0
-                        0x1B,  // iload_1
-                        0x2E,  // iaload
-                        0x92,  // i2c
-                        0xB6, 0x00, 0x0B  // invokevirtual print(Ljava/lang/String;)V
+                        0x2A,              // aload_0
+                        0x1B,              // iload_1
+                        0x2E,              // iaload
+                        0x92,              // i2c
+                        0xB6, 0x00, 0x0B   // invokevirtual print(Ljava/lang/String;)V
                 );
                 break;
             case (','):
                 w.write(
-                        0x2A,  // aload_0
-                        0x1B,  // iload_1
+                        0x2A,              // aload_0
+                        0x1B,              // iload_1
                         0xB2, 0x00, 0x11,  // getstatic System.in
                         0xB6, 0x00, 0x15,  // invokevirtual read()I
-                        0x4F  // iastore
+                        0x4F               // iastore
                 );
                 break;
             case ('['):
-                int size = baos.size();
                 w.write((Object) compileLoop(is));
                 break;
             case (']'):
+                // exit loop
                 return baos.toByteArray();
             default:
+                // comment
                 // NOP
             }
         }
@@ -243,6 +260,9 @@ public final class Compiler {
         return baos.toByteArray();
     }
 
+    /**
+     * Compiles loop to `ifeq..goto`.
+     */
     private static byte[] compileLoop(InputStream is) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         FluentByteWriter w = new FluentByteWriter(baos);
@@ -251,13 +271,15 @@ public final class Compiler {
                 // load current pointer value
                 0x2A,  // aload_0
                 0x1B,  // iload_1
-                0x2E  // iaload
+                0x2E   // iaload
         );
         byte[] insideLoop = compileCodeElements(is);
         w.write(
-                0x99, ByteUtils.toByteArray2((short) (insideLoop.length + 6)), // ifeq  // 4 = ifeq(3) + loop length + goto(3)
+                // if the current pointer indicates 0...
+                // 6 = ifeq(3) + loop length + goto(3)
+                0x99, ByteUtils.toByteArray2(insideLoop.length + 6),    // ifeq
                 insideLoop,
-                0xA7, ByteUtils.toByteArray2((short) -(insideLoop.length + 6))  // goto
+                0xA7, ByteUtils.toByteArray2(-(insideLoop.length + 6))  // goto
         );
 
         return baos.toByteArray();

@@ -19,23 +19,6 @@ import static org.junit.Assert.assertThat;
 
 public class CompilerTest {
 
-    private String compile(String code) throws Exception {
-        ByteArrayInputStream bais = new ByteArrayInputStream(code.getBytes(StandardCharsets.UTF_8));
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
-        Compiler.compile(bais, baos);
-        byte[] clazz = baos.toByteArray();
-
-        TestClassLoader loader = new TestClassLoader(clazz);
-        Class<MockMain> target = (Class<MockMain>) loader.loadClass("Main");
-
-        ByteArrayOutputStream redirect = new ByteArrayOutputStream();
-        System.setOut(new PrintStream(redirect));
-        target.getDeclaredMethod("main", String[].class).invoke(null, (Object) null);
-
-        return new String(redirect.toByteArray(), StandardCharsets.UTF_8);
-    }
-
     /**
      * Test "+-.".
      */
@@ -93,6 +76,26 @@ public class CompilerTest {
 
         assertThat(resultCode, is(0));
         assertThat(resultOut, is("Hello World!\n"));
+    }
+
+    /**
+     * Helper function that receives BF code and returns its stdout.
+     */
+    private String compile(String code) throws Exception {
+        ByteArrayInputStream bais = new ByteArrayInputStream(code.getBytes(StandardCharsets.UTF_8));
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        Compiler.compile(bais, baos);
+        byte[] clazz = baos.toByteArray();
+
+        TestClassLoader loader = new TestClassLoader(clazz);
+        Class<MockMain> target = (Class<MockMain>) loader.loadClass("Main");
+
+        ByteArrayOutputStream redirect = new ByteArrayOutputStream();
+        System.setOut(new PrintStream(redirect));
+        target.getDeclaredMethod("main", String[].class).invoke(null, (Object) null);
+
+        return new String(redirect.toByteArray(), StandardCharsets.UTF_8);
     }
 
 }
