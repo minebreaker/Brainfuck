@@ -233,7 +233,7 @@ public final class Compiler {
                         0x1B,              // iload_1
                         0x2E,              // iaload
                         0x92,              // i2c
-                        0xB6, 0x00, 0x0B   // invokevirtual print(Ljava/lang/String;)V
+                        0xB6, 0x00, 0x0B   // invokevirtual print(C)V
                 );
                 break;
             case (','):
