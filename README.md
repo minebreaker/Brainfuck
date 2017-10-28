@@ -11,9 +11,12 @@ Interpreter i = new Interpreter(System.out, System.in);
 
 Reads InputStream til hit linebreaks and execute the code.
 
-See `brainfuck.bytecode.CompilerTest.java`.
+See [`brainfuck.bytecode.InterpreterTest.java`](https://bitbucket.org/minebreaker_tf/brainfuck/src/c068ba129ccfc81fbe76e876f986f714d0f36f22/src/test/java/brainfuck/InterpreterTest.java?at=master&fileviewer=file-view-default).
+
 
 ## Compiler
+
+[解説](https://deadcode.rip/programming/brainfuck/brainfuck)
 
 Compiles given Brainfuck code into Java byte code.
 
